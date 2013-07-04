@@ -1,0 +1,25 @@
+body {	
+	background-color	: 	#FFFFFF;	
+	font-family			:	Helvetica, Arial, sans-serif;
+	color				:	#6699FF;
+}
+
+#displayTime{
+	font-size			: 	2.2em;
+	position			:	absolute;
+	left				:	510px;
+	top					:	20px;
+}
+
+#displayDate{
+	font-size			: 	0.9em;
+	position			:	absolute;
+	left				:	510px;
+	top					:	60px;
+}
+
+# backNext{
+	position			:	absolute;
+	left				:	410px;
+	top					:	20px;
+}
