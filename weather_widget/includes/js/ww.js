@@ -1,7 +1,11 @@
 		
-	var timeIndex 	= 0;
+	var timeIndex 		= 0;
 	var timeStepsArray;	
-	var sq_width	= 20;
+	var sq_width		= 20;
+	var pixelAttributes	= [];
+	var windPixels		= [];
+	var ctx;
+	
 	var colour		= [];
 	colour["NA"] 	= {r: 0, 	g: 0, 		b: 0};
 	colour["0"] 	= {r: 255, 	g: 255, 	b: 0};
@@ -36,25 +40,44 @@
 	colour["29"] 	= {r: 200, 	g: 200, 	b: 200};
 	colour["30"] 	= {r: 60, 	g: 60, 		b: 60};
 	
+	var wind_dir		= [];
+	wind_dir["N"]		= {x: 0, 		y: -1};
+	wind_dir["NNE"]		= {x: 0.383, 	y: -0.924};
+	wind_dir["NE"]		= {x: 0.707, 	y: -0.707};
+	wind_dir["ENE"]		= {x: 0.924, 	y: -0.383};
+	wind_dir["E"]		= {x: 1, 		y: 0};
+	wind_dir["ESE"]		= {x: 0.924, 	y: 0.383};
+	wind_dir["SE"]		= {x: 0.707, 	y: 0.707};
+	wind_dir["SSE"]		= {x: 0.383, 	y: 0.924};
+	wind_dir["S"]		= {x: 0, 		y: 1};
+	wind_dir["SSW"]		= {x: -0.383, 	y: 0.924};
+	wind_dir["SW"]		= {x: -0.707, 	y: 0.707};
+	wind_dir["WSW"]		= {x: -0.924, 	y: 0.383};
+	wind_dir["W"]		= {x: -1, 		y: 0};
+	wind_dir["WNW"]		= {x: -0.924, 	y: -0.383};
+	wind_dir["NW"]		= {x: -0.707, 	y: -0.707};
+	wind_dir["NNW"]		= {x: -0.383, 	y: -0.924};
+	
     function capabilitiesData(data)
 	{
-		var items = [];
 		
-		frameworkDisplay();
+		uiSetup();
 		
-		timeStepsArray 	= data["Resource"]["TimeSteps"];
+		timeStepsArray 	= data["Resource"]["TimeSteps"]["TS"];
 		if(!timeStepsArray) 
 		{
 			alert("No Time Steps returned.")
 			return;
 		}
 		
-		items.push('<li>' + timeStepsArray + " :" + timeStepsArray["TS"][timeIndex] + " :" + timeIndex);
+		getWeatherAtTime(getCurrentTimeIndex()); 
 		
-		getWeatherAtTime(timeIndex); 
+		// list for debugging
+		// var items = [];
+		// items.push('<li>' + timeStepsArray + " :" + timeStepsArray[timeIndex] + " :" + timeIndex);
 	};
 	
-    function frameworkDisplay()
+    function uiSetup()
 	{
 		$('<div id="backNext"></div>').appendTo('body');
 		$('<div id="displayTime"></div>').appendTo('body');
@@ -74,10 +97,33 @@
 			}).appendTo('#backNext');
 	};
 	
+    function getCurrentTimeIndex()
+	{
+		var now = new Date();
+		for(var i = 0; i < timeStepsArray.length; i++)
+		{
+			var ts = convertTimeStepToDate(timeStepsArray[i]);
+			if(now < ts)
+			{
+				return i;
+			};
+		};
+		return 0;
+	};
+	
+	function convertTimeStepToDate(ts)
+	{
+		var date	= ts.substring(0,10);
+		var time	= ts.substring(11,19);
+		var date	= date.replace(/-/g,"/");
+		var ret 	= new Date(date + " " + time);
+		return ret;
+	};
+	
     function getWeatherAtTime(tI)
 	{
 		$("body").css('cursor','progress');
-		var time 		= timeStepsArray["TS"][tI];
+		var time 		= timeStepsArray[tI];
 		time 			= time.substring(0,13) + "Z";
 		
 		var displayDate	= time.substring(0,10);
@@ -95,18 +141,77 @@
 		
 		var script = document.createElement("script");
 		script.setAttribute('type', "text/javascript");
-		script.setAttribute('src', "http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/all?res=3hourly&time=" + time + "&key=309f690c-af9b-441f-9248-5c8768602995&callback=plotData");
+		script.setAttribute('src', "http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/all?res=3hourly&time=" + time + "&key=309f690c-af9b-441f-9248-5c8768602995&callback=setup");
 		$(script).appendTo('body');
 		
 	};
 	
-    function plotData(data)
+    function setup(data)
 	{
 		$("body").css('cursor','wait');
+		plotData(data);	
+		setupWind();
+		drawWind();
+		$("body").css('cursor','default');		
+	};
+	
+    function setupWind()
+	{
+		windPixels		= [];
+		windPixels.push({x: 300, y: 400});
+		windPixels.push({x: 310, y: 400});
+		windPixels.push({x: 320, y: 400});
+		windPixels.push({x: 330, y: 400});
+		windPixels.push({x: 340, y: 400});
+		windPixels.push({x: 350, y: 400});
+		windPixels.push({x: 360, y: 400});
+		windPixels.push({x: 370, y: 400});
+		windPixels.push({x: 380, y: 400});
+		windPixels.push({x: 390, y: 400});
+		windPixels.push({x: 400, y: 400});
+		windPixels.push({x: 300, y: 410});
+		windPixels.push({x: 310, y: 410});
+		windPixels.push({x: 320, y: 410});
+		windPixels.push({x: 330, y: 410});
+		windPixels.push({x: 340, y: 410});
+		windPixels.push({x: 350, y: 410});
+		windPixels.push({x: 360, y: 410});
+		windPixels.push({x: 370, y: 410});
+		windPixels.push({x: 380, y: 410});
+		windPixels.push({x: 390, y: 410});
+		windPixels.push({x: 400, y: 410});
+	};
+	
+    function drawWind()
+	{
+		setInterval(drawWindPixels(), 2);
+	};
+	
+    function drawWindPixels()
+	{
+		//var ret	= {x: px.x, y: px.y, col: col, wind_x: wind.x, wind_y: wind.y};
+		//alert("dwp: " + windPixels.length);
+		for(var i in windPixels)
+		{
+			var wP	= windPixels[i];
+			var px	= pixelAttributes[Math.floor(wP.x)][Math.floor(wP.y)];
+			
+			ctx.fillStyle = "rgb(50,50,50)";
+			ctx.fillRect (wP.x, wP.y, 1, 1);
+			
+			wP.x += px.wind_x / 5;
+			wP.y += px.wind_y / 5;
+			//alert(i + " :" + px.x + " :" + px.y + " :" + px.wind_x + " :" + px.wind_y + " :" + wP.x + " :" + wP.y);
+		};
+		drawWindPixels();
+	};
+	
+    function plotData(data)
+	{
 		var locations	= data["SiteRep"]["DV"]["Location"];
 		
 		var c			= document.getElementById("weatherCanvas");
-		var ctx			= c.getContext("2d");
+		ctx				= c.getContext("2d");
 		ctx.clearRect(0, 0, c.width, c.height);
 		
 		var locsInSquares		= [];
@@ -129,29 +234,41 @@
 			var windspeed	= val["Period"]["Rep"]["S"];
 			var direction	= val["Period"]["Rep"]["D"];
 			var colour		= weatherColour(Pp, type, temp);
-			//ctx.fillStyle	= colour;
-			//ctx.fillRect(loc_x, loc_y, 2, 2);
 			
 			var x_sq		= Math.floor(loc_x / sq_width);
 			var y_sq		= Math.floor(loc_y / sq_width);
-			var loc_obj		= {x: loc_x, y: loc_y, colour: colour};
+			
+			var loc_obj		= {x: loc_x, y: loc_y, colour: colour, wind_vector: formatWindVector(windspeed, direction)};
 			locsInSquares[x_sq][y_sq].push(loc_obj);
 		});
 		
 		for(var i = 0; i < c.width; i++)
 		{
+			pixelAttributes.push([]);
 			for(var j = 0; j < c.height; j++)
 			{
-				var px			= {x: i, y: j};
-				var px_col 		= determinePixelColour(px, locsInSquares);
-				ctx.fillStyle	= px_col;
-				ctx.fillRect(i, j, 1, 1);
+				var px					= {x: i, y: j};
+				var pixel 				= setPixelAttributes(px, 		locsInSquares);
+				pixelAttributes[i].push(pixel);
+				ctx.fillStyle			= pixel.col;
+				ctx.fillRect(pixel.x, pixel.y, 1, 1);
+				//alert(pixelAttributes[i][j].wind_x + ": "+ pixelAttributes[i][j].wind_y);
 			};
 		};
-		
-		$("body").css('cursor','default');		
 	};
 
+    function formatWindVector(w_spd, w_dir)
+	{
+		var w_x	= wind_dir[w_dir].x * w_spd;
+		var w_y	= wind_dir[w_dir].y * w_spd;
+		
+		if(w_x == undefined){			w_x = 0;		};
+		if(w_y == undefined){			w_y = 0;		};
+		
+		var ret	= {x: w_x, y: w_y};
+		return ret;
+	};
+	
     function formatLat(l)
 	{
 		l 		= lat2y(l);
@@ -178,7 +295,7 @@
 
     function weatherColour(Pp, type, temp)
 	{
-		if(typeof Pp === "undefined")	
+		if(typeof Pp == "undefined")	
 		{ 
 			Pp = 0; 
 		};
@@ -190,7 +307,7 @@
 		return colour_obj;
 	};
 	
-    function determinePixelColour(px, locsInSquares)
+    function setPixelAttributes(px, locsInSquares)
 	{
 		var px_square_x		= Math.floor(px.x / sq_width);
 		var px_square_y		= Math.floor(px.y / sq_width);
@@ -218,7 +335,7 @@
 			};
 		};
 		if(nearbyLocs.length > 6) 
-		{
+		{ 
 			nearbyLocs = nearbyLocs.sort(sortDistance)
 			function sortDistance(a,b){
 				if (a.distance < b.distance)
@@ -230,16 +347,51 @@
 			nearbyLocs = nearbyLocs.slice(0, 6);
 			//alert(nearbyLocs[0].distance + " : " + nearbyLocs[1].distance + " : " + nearbyLocs[2].distance + " : " + nearbyLocs[3].distance);
 		};
-		var ret	= averageColours(px, nearbyLocs);
+		var col		= averageColours(px, nearbyLocs);
+		var wind	= averageWinds(px, nearbyLocs);
+		var ret	= {x: px.x, y: px.y, col: col, wind_x: wind.x, wind_y: wind.y};
 		return ret;
+	};
+	
+    function averageWinds(px, nearbyLocs)
+	{
+		var wind	= {x: 0, y: 0};
+		if(typeof nearbyLocs == "undefined")	
+		{ 
+			alert("Nearby locations undefined");
+			return wind;
+		};
+		if(!nearbyLocs.length) 
+		{
+			return wind;
+		}
+		var tot_x		= 0;
+		var tot_y		= 0;
+		var totDist		= 0;
+		$.each(nearbyLocs, function(index, val) 
+		{
+			var w			= nearbyLocs[index].wind_vector;
+			if(getDistance(px, nearbyLocs[index]) == 0)
+			{
+				return w;
+			};
+			var dist		= (1 / getDistance(px, nearbyLocs[index]));
+			tot_x			+= (w.x * dist);
+			tot_y			+= (w.y * dist);
+			totDist			+= dist;
+		});
+		var av_x		= parseInt(tot_x / totDist);
+		var av_y		= parseInt(tot_y / totDist);
+		wind	= {x: av_x, y: av_y};
+		return wind;
 	};
 	
     function averageColours(px, nearbyLocs)
 	{
 		var col			= "#ffffff";
-		if(typeof nearbyLocs === "undefined")	
+		if(typeof nearbyLocs == "undefined")	
 		{ 
-			alert("undefined");
+			alert("Nearby locations undefined");
 			return col;
 		};
 		if(!nearbyLocs.length) 
